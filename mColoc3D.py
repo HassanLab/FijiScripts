@@ -1,13 +1,11 @@
 import os, sys
 
-from javax.swing import (BoxLayout, ImageIcon, JButton, JFrame, JPanel,
+from javax.swing import (BoxLayout, DefaultListModel, ImageIcon, JButton, JFrame, JPanel,
         JPasswordField, JLabel, JTextArea, JTextField, JScrollPane,
         JList, JCheckBox, DefaultListCellRenderer,
         ListSelectionModel, SwingConstants, WindowConstants)
 from java.awt import Component, GridBagLayout, GridBagConstraints, Insets, Color
 from java.awt.event import WindowEvent, WindowAdapter
-
-from swingutils.models.list import DelegateListModel
 
 from ij import IJ, ImagePlus, ImageStack, ImageListener
 from ij.io import DirectoryChooser, FileSaver
@@ -24,12 +22,6 @@ from gadgets import ThresholdMode
 from net.imglib2 import TwinCursor
 from net.imglib2.img import ImagePlusAdapter
 from net.imglib2.view import Views
-
-
-defaultChannelA = "Channel 1"
-defaultChannelB = "Channel 2"
-defaultMethodA = "Mean"
-defaultMethodB = "Otsu"
 
 
 class MandersPlugin(ImageListener, WindowAdapter):
@@ -112,8 +104,8 @@ class MandersPlugin(ImageListener, WindowAdapter):
 		imp = self.openImage(imageFile)
 		if imp is not None:
 			cell = Cell(imp.NSlices, 1)
-			self.cells = DelegateListModel([])
-			self.cells.append(cell)
+			self.cells = DefaultListModel()
+			self.cells.addElement(cell)
 			self.showMainWindow(self.cells)
 			if self.checkbox3D.isSelected():
 				self.displayImage(imp)
@@ -171,7 +163,7 @@ class MandersPlugin(ImageListener, WindowAdapter):
 				zslice.setRoi(cropRoi)
 				nslice = zslice.crop()
 				if cell.mode3D:
-					oroi = cell.slices[z - 1].roi	
+					oroi = cell.slices.get(z - 1).roi	
 				else:
 					oroi = cell.roi
 				if oroi is not None:
@@ -256,7 +248,7 @@ class MandersPlugin(ImageListener, WindowAdapter):
 				Insets(5, 2, 2, 0), 0, 0
 		))
 		
-		self.cellList = JList(DelegateListModel([]),
+		self.cellList = JList(DefaultListModel(),
 			selectionMode = ListSelectionModel.SINGLE_SELECTION,
 			cellRenderer = MyRenderer(),
 			selectedIndex = 0,
@@ -286,7 +278,7 @@ class MandersPlugin(ImageListener, WindowAdapter):
 				Insets(5, 2, 2, 0), 0, 0
 		))
 		
-		self.sliceList = JList(DelegateListModel([]),
+		self.sliceList = JList(DefaultListModel(),
 			selectionMode = ListSelectionModel.SINGLE_SELECTION,
 			cellRenderer = MyRenderer(),
 			selectedIndex = 0,
@@ -350,14 +342,14 @@ class MandersPlugin(ImageListener, WindowAdapter):
 				self.imp.hide()
 		selectedCell = self.cellList.selectedIndex
 		if selectedCell >= 0:
-			cell = self.cells[selectedCell]
+			cell = self.cells.get(selectedCell)
 			self.sliceList.model = cell.slices
 			self.sliceList.selectedIndex = 0
 		
 	def addCell(self, event):
-		size = len(self.cells)
+		size = self.cells.size()
 		if (size > 0):
-			last = self.cells[size - 1]
+			last = self.cells.get(size - 1)
 			n = last.n + 1
 		else:
 			n = 1
@@ -367,7 +359,7 @@ class MandersPlugin(ImageListener, WindowAdapter):
 	def removeCell(self, event):
 		selected = self.cellList.selectedIndex
 		if selected >= 0:
-			self.cells.remove(self.cells[selected])
+			self.cells.remove(self.cells.get(selected))
 			if (selected >= 1):
 				self.cellList.selectedIndex = selected - 1
 			else:
@@ -376,11 +368,11 @@ class MandersPlugin(ImageListener, WindowAdapter):
 	def selectCell(self, event):
 		selected = self.cellList.selectedIndex
 		if selected >= 0:
-			cell = self.cells[selected]
+			cell = self.cells.get(selected)
 			self.sliceList.model = cell.slices
 			self.sliceList.selectedIndex = 0
 		else:
-			self.sliceList.model = DelegateListModel([])
+			self.sliceList.model = DefaultListModel()
 		if self.preview is not None:
 			self.preview.setRoi(cell.roi)
 
@@ -388,11 +380,11 @@ class MandersPlugin(ImageListener, WindowAdapter):
 		selectedCell = self.cellList.selectedIndex
 		selectedSlice = self.sliceList.selectedIndex
 		if selectedCell >= 0 and selectedSlice >= 0:
-			cell = self.cells[selectedCell]
+			cell = self.cells.get(selectedCell)
 			image = self.imp
 			mode3D = self.checkbox3D.isSelected()
 			if image is not None and cell is not None and mode3D:
-				roi = cell.slices[selectedSlice].roi
+				roi = cell.slices.get(selectedSlice).roi
 				if (image.z - 1 != selectedSlice):
 					image.z = selectedSlice + 1				
 				image.setRoi(roi, True)
@@ -409,15 +401,15 @@ class MandersPlugin(ImageListener, WindowAdapter):
 		selectedCell = self.cellList.selectedIndex
 		selectedSlice = self.sliceList.selectedIndex
 		if selectedCell >= 0 and selectedSlice >= 0 and imp is not None:
-			cell = self.cells[selectedCell]
+			cell = self.cells.get(selectedCell)
 			impRoi = imp.getRoi()
 			if cell is not None and impRoi is not None:
 				index = selectedSlice + 1
 				roi = ShapeRoi(impRoi, position = index)
 				cell.mode3D = True
 				cell.name = "Cell %i (3D)" % cell.n
-				cell.slices[selectedSlice].roi = roi
-				if (index + 1 <= len(cell.slices)):
+				cell.slices.get(selectedSlice).roi = roi
+				if (index + 1 <= cell.slices.size()):
 					imp.z = index + 1			
 			self.cellList.repaint(self.cellList.getCellBounds(selectedCell, selectedCell))
 			self.sliceList.repaint(self.sliceList.getCellBounds(selectedSlice, selectedSlice))
@@ -425,7 +417,7 @@ class MandersPlugin(ImageListener, WindowAdapter):
 	def updateSlice2D(self, imp):
 		selectedCell = self.cellList.selectedIndex
 		if selectedCell >= 0 and imp is not None:
-			cell = self.cells[selectedCell]
+			cell = self.cells.get(selectedCell)
 			impRoi = imp.getRoi()
 			if cell is not None and impRoi is not None:
 				roi = ShapeRoi(impRoi, position = 1)
@@ -456,11 +448,11 @@ class MandersPlugin(ImageListener, WindowAdapter):
 			if method != "None":
 				luts.append(oluts[c])
 				channels.append(c)
-		for cell in self.cells:
+		for cell in self.cells.toArray():
 			manders = self.getManders(self.imp, cell)
 			if manders is not None:
 				chimps, thrimps, thrs, raws, thrds = manders
-				index = self.cells.index(cell) + 1
+				index = self.cells.indexOf(cell) + 1
 				title = "Cell_%i-" % index + self.imp.title
 				self.saveMultichannelImage(title, chimps, oluts)
 				title = "Cell_%i_thrd-" % index + self.imp.title
@@ -496,7 +488,7 @@ class Cell(object):
 	def __init__(self, nslices, n, mode3D = True):
 		self.n = n
 		self.roi = None
-		self.slices = DelegateListModel([])
+		self.slices = DefaultListModel()
 		self.initSlices(nslices)
 		self.name = "Cell %i (none)" % self.n
 		self.mode3D = mode3D
@@ -504,15 +496,15 @@ class Cell(object):
 	def initSlices(self, nslices):
 		for i in range(1, nslices + 1):
 			aslice = Slice("Slice %i" % i)
-			self.slices.append(aslice)
+			self.slices.addElement(aslice)
 
 	def isDefined(self):
 		if self.mode3D:
-			size = len(self.slices)
+			size = self.slices.size()
 			if size <= 0:
 				return False
 			for i in range(0, size):
-				aslice = self.slices[i]
+				aslice = self.slices.get(i)
 				if not aslice.isDefined():
 					return False
 		else:
@@ -522,7 +514,7 @@ class Cell(object):
 			
 	def getCropRoi(self):
 		crop = None
-		for aslice in self.slices:
+		for aslice in self.slices.toArray():
 			roi = aslice.roi
 			if roi is not None:
 				if crop is None:
