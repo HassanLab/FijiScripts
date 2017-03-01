@@ -65,7 +65,7 @@ class MandersPlugin(ImageListener, WindowAdapter):
 		except UnknownFormatException:
 			return None
 		if self.imp.getNChannels() < 2:
-			IJ.error("Bad image format", "Image must contain at lease 2 channels!")
+			IJ.error("Bad image format", "Image must contain at least 2 channels!")
 			return None
 		if not self.pairs or \
 			not self.methods:
@@ -353,13 +353,13 @@ class MandersPlugin(ImageListener, WindowAdapter):
 			n = last.n + 1
 		else:
 			n = 1
-		self.cells.append(Cell(self.imp.NSlices, n))
+		self.cells.addElement(Cell(self.imp.NSlices, n))
 		self.cellList.selectedIndex = size
 
 	def removeCell(self, event):
 		selected = self.cellList.selectedIndex
 		if selected >= 0:
-			self.cells.remove(self.cells.get(selected))
+			self.cells.removeElement(self.cells.get(selected))
 			if (selected >= 1):
 				self.cellList.selectedIndex = selected - 1
 			else:
@@ -449,6 +449,7 @@ class MandersPlugin(ImageListener, WindowAdapter):
 				luts.append(oluts[c])
 				channels.append(c)
 		for cell in self.cells.toArray():
+			print cell;
 			manders = self.getManders(self.imp, cell)
 			if manders is not None:
 				chimps, thrimps, thrs, raws, thrds = manders
