@@ -79,7 +79,6 @@ def addVoxels(objectVoxels, imagePlus):
 
 def getMeasurements(objects, image):
     imageChannels = []
-    print image
     splitter = ChannelSplitter()
     for channel in range (0, image.getNChannels()):
         channelStack = splitter.getChannel(image, channel + 1)
@@ -115,7 +114,6 @@ def threshold(image):
     return result
 
 def maxima(image, radius, cutoff):
-    #image16 = ops.convert().uint16(image)
     imp = convert.convert(ops.copy().img(image), ImagePlus)
     filters = FastFilters3D()
     oimp = ImagePlus("maxima", filters.filterImageStack(imp.getImageStack(), FastFilters3D.MAXLOCAL, radius, radius, radius, Runtime.getRuntime().availableProcessors(), True))

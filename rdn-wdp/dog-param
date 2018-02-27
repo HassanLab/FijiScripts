@@ -1,0 +1,39 @@
+#!/bin/bash
+#SBATCH -m block:block
+#SBATCH --mail-type=ALL
+#SBATCH -N 1
+#SBATCH -c 7
+#SBATCH --partition=express
+#SBATCH --time=00:30:00
+
+#module load linux-centos7-x86_64/gcc/5.4.0/jdk/8u141-b15
+
+BASE="$HOME/projects/rdn-wdp/optimize"
+OUTDIR="$HOME/projects/rdn-wdp/output/optimize"
+
+pfile="$BASE/dog-param.txt"
+sfile="$BASE/dog-segment.py"
+dsegm="/watershed/pmap/label1"
+dmeas="/raw/fused/channel1"
+
+job="$SLURM_ARRAY_TASK_ID"
+
+params=`sed -n "${job}p" $pfile`
+sigma=`echo $params | cut -d ',' -f 1`
+div=`echo $params | cut -d ',' -f 2`
+radius=`echo $params | cut -d ',' -f 3`
+cutoff=`echo $params | cut -d ',' -f 4`
+
+inname="$BASE/sample_1.h5"
+outname="$OUTDIR/sample_1-${sigma}_${div}_${radius}_${cutoff}_result.h5"
+paramstr="[inputfile='$inname', outputfile='$outname', model='', dsegm='$dsegm', dmeas='$dmeas', sigma=$sigma, div=$div, radius=$radius, cutoff=$cutoff]"
+
+echo $HOME/bin/fiji --ij2 --headless --run $sfile "$paramstr"
+$HOME/bin/fiji --ij2 --headless --run $sfile "$paramstr"
+
+inname="$BASE/sample_1.h5"
+outname="$OUTDIR/sample_1-${sigma}_${div}_${radius}_${cutoff}_result.h5"
+paramstr="[inputfile='$inname', outputfile='$outname', model='', dsegm='$dsegm', dmeas='$dmeas', sigma=$sigma, div=$div, radius=$radius, cutoff=$cutoff]"
+
+echo $HOME/bin/fiji --ij2 --headless --run $sfile "$paramstr"
+$HOME/bin/fiji --ij2 --headless --run $sfile "$paramstr"
