@@ -1,0 +1,30 @@
+#!/bin/bash
+#SBATCH -m block:block
+#SBATCH --mail-type=ALL
+#SBATCH -N 1
+#SBATCH -c 28
+#SBATCH --partition=express
+#SBATCH --time=01:30:00
+
+FIJI="/usr/local/bin/fiji"
+BASE="$HOME/src/Fiji/FijiScripts/rdn-wdp"
+
+pfile="$BASE/dog-segment.txt"
+sfile="$BASE/dog-segment.py"
+
+job="$SLURM_ARRAY_TASK_ID"
+
+inputfile=`sed -n "${job}p" $pfile`
+dsegm="/raw/fused/channel1"
+dmeas="/raw/fused/channel0, /raw/fused/channel2, /raw/fused/channel1"
+sigma="18"
+div="4"
+radius="3"
+paramstr="[inputfile=\"$inputfile\", dsegm=\"$dsegm\", dmeas=\"$dmeas\", sigma=$sigma, div=$div, radius=$radius]"
+#paramstr="[inputfile=\"$inputfile\"]"
+
+#module load linux-centos7-x86_64/gcc/5.4.0/jdk/8u141-b15
+echo "Processing $inputfile with $paramstr"
+echo "$FIJI --ij2 --headless --run $sfile \"$paramstr\""
+$FIJI --ij2 --headless --run $sfile "$paramstr"
+echo "Done processing $inputfile"
