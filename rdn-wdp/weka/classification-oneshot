@@ -1,0 +1,20 @@
+#!/bin/bash
+#SBATCH -N 1
+#SBATCH -c 28
+#SBATCH -p bigmem
+#SBATCH --mem 250GB
+#SBATCH --time 02:30:00
+
+BASE="$HOME/projects/rdn-wdp/weka"
+
+job="$SLURM_ARRAY_TASK_ID"
+fiji="$HOME/bin/fiji --ij2 --headless --run"
+script="$BASE/classification-oneshot.py"
+classifier="$BASE/dapi-classifier.weka"
+imagelist="$BASE/dapi-list.csv"
+imagefile=`sed -n "${job}p" $imagelist`
+dataset="/raw/fused/channel1"
+
+paramstr="[classifier=\"$classifier\",imagefile=\"$imagefile\",dataset=\"$dataset\"]"
+
+$fiji $script "$paramstr"

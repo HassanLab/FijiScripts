@@ -1,0 +1,20 @@
+#!/bin/bash
+#SBATCH -N 1
+#SBATCH -c 28
+#SBATCH -p bigmem
+#SBATCH --mem 250GB
+#SBATCH --time 08:00:00
+
+BASE="$HOME/projects/rdn-wdp/weka"
+
+fiji="$HOME/bin/fiji --ij2 --headless --run"
+script="$BASE/classification.py"
+classifier="$BASE/training-data/dapi-classifier.weka"
+#classifier="$BASE/classifier.weka"
+imagelist="$BASE/training-data/dapi-list.csv"
+
+paramstr="[classifier=\"$classifier\",imagelist=\"$imagelist\"]"
+
+
+$fiji $script "$paramstr"
+
