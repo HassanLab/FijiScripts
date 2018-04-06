@@ -1,0 +1,27 @@
+#!/bin/bash
+#SBATCH -N 1
+#SBATCH -c 28
+#SBATCH --partition=normal
+#SBATCH --time=01:00:00
+
+FIJI="$HOME/bin/fiji"
+BASE="$HOME/projects/rdn-wdp"
+
+pfile="$BASE/dog-segment.txt"
+sfile="$BASE/dog-segment-pmap.py"
+
+job="$SLURM_ARRAY_TASK_ID"
+
+inputfile=`sed -n "${job}p" $pfile`
+dsegm="/weka/pmap1"
+dmeas="/raw/fused/channel0, /raw/fused/channel2, /raw/fused/channel1"
+sigma="8"
+div="1.5"
+radius="3"
+threshhold="0.2"
+cutoff="0.0"
+paramstr="[inputfile=\"$inputfile\", outputfile=\"$inputfile\", dsegm=\"$dsegm\", dmeas=\"$dmeas\", sigma=$sigma, div=$div, radius=$radius, thresh=$threshold, cutoff=$cutoff]"
+
+echo "Processing $inputfile with $paramstr"
+$FIJI --ij2 --headless --run $sfile "$paramstr"
+echo "Done processing $inputfile"
